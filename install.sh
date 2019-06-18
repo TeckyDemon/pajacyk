@@ -53,7 +53,7 @@ case "$(uname -s)" in
 		commands=$(cat<<-EOT
 			brew update && brew upgrade
 			brew install python
-			pip install -r requirements.txt
+			pip install -Ur requirements.txt
 		EOT
 		)
 		;;

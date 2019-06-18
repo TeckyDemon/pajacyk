@@ -2,7 +2,7 @@
 title Pajacyk installer
 color 0a
 call :is_installed python , https://www.python.org/ || exit /B %errorlevel%
-pip install -r requirements.txt
+pip install -Ur requirements.txt
 echo Successfully installed Pajacyk.
 exit /B 0
 :is_installed
