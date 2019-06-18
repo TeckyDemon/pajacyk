@@ -41,7 +41,8 @@ def bot(id):
 				},
 				proxies={
 					'https':proxy
-				}
+				},
+				timeout=15
 			)
 			logv(response.content.decode())
 		except (OSError,KeyboardInterrupt):pass
