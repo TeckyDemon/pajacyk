@@ -7,11 +7,15 @@ from random import choice
 from argparse import ArgumentParser
 from traceback import format_exc
 from threading import Thread,Lock,Event
+from requests.exceptions import RequestException
 
+def exit(exit_code):
+	logv('[INFO] Exitting with exit code %d'%exit_code)
+	_exit(exit_code)
 def logv(message):
 	stdout.write('%s\n'%message)
 	if message.startswith('[ERROR]'):
-		_exit(1)
+		exit(1)
 def log(message):
 	global args
 	if args.debug:
@@ -42,10 +46,12 @@ def bot(id):
 				proxies={
 					'https':proxy
 				},
-				timeout=15
+				timeout=5
 			)
 			logv(response.content.decode())
-		except (OSError,KeyboardInterrupt):pass
+		except RequestException as e:
+			log('[WARNING][%d] %s'%(id,e.__class__.__name__))
+		except KeyboardInterrupt:pass
 		except:
 			exception=format_exc()
 			exception_event.set()
@@ -66,5 +72,6 @@ if __name__=='__main__':
 			t.start()
 		exception_event.wait()
 		logv('[ERROR] %s'%exception)
-	except KeyboardInterrupt:_exit(0)
-	except:_exit(1)
+	except KeyboardInterrupt:exit(0)
+	except Exception as e:
+		logv('[ERROR] %s'%e)
