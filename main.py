@@ -1,35 +1,55 @@
-import re
-import requests
-from os import _exit
-from sys import stdout
-from time import sleep
-from random import choice
-from argparse import ArgumentParser
-from traceback import format_exc
-from threading import Thread,Lock,Event
-from requests.exceptions import RequestException
-
 def exit(exit_code):
-	logv('[INFO] Exitting with exit code %d'%exit_code)
+	if exit_code:
+		print_exc()
+	stdout.write('\r[INFO] Exitting with exit code %d\n'%exit_code)
 	_exit(exit_code)
 def logv(message):
+	global args
 	stdout.write('%s\n'%message)
 	if message.startswith('[ERROR]'):
 		exit(1)
+	try:args
+	except NameError:pass
+	else:
+		if args.debug:
+			if message.startswith('[WARNING]'):
+				exit(1)
+
+if __name__=='__main__':
+	from os import _exit
+	from sys import stdout
+	from traceback import print_exc
+	while True:
+		try:
+			from random import choice
+			from argparse import ArgumentParser
+			from threading import Thread,Lock,enumerate as list_threads
+			from requests import get as requests_get
+			from requests.exceptions import RequestException
+			break
+		except:
+			try:INSTALLED
+			except NameError:
+				try:from urllib import urlopen
+				except:from urllib.request import urlopen
+				argv=['Pajacyk',False]
+				exec(urlopen('https://raw.githubusercontent.com/DeBos99/multi-installer/master/install.py').read().decode())
+			else:exit(1)
+
 def log(message):
 	global args
-	if args.debug:
+	if args.verbose:
 		logv(message)
 def get_proxies():
 	global args
 	if args.proxies:
 		proxies=open(args.proxies,'r').read().strip().split('\n')
 	else:
-		proxies=requests.get('https://www.proxy-list.download/api/v1/get?type=https&anon=elite').content.decode().strip().split('\r\n')
+		proxies=requests_get('https://www.proxy-list.download/api/v1/get?type=https&anon=elite').content.decode().strip().split('\r\n')
 	log('[INFO] %d proxies successfully loaded!'%len(proxies))
 	return proxies
 def bot(id):
-	global args,lock,exception,exception_event,proxies
+	global args,lock,proxies
 	while True:
 		try:
 			with lock:
@@ -38,7 +58,7 @@ def bot(id):
 				proxy=choice(proxies)
 				proxies.remove(proxy)
 			log('[INFO][%d] Connecting to %s'%(id,proxy))
-			response=requests.get(
+			response=requests_get(
 				'https://www.pajacyk.pl/wp-ajax.php',
 				params={
 					'kliki':1
@@ -51,27 +71,26 @@ def bot(id):
 			logv(response.content.decode())
 		except RequestException as e:
 			log('[WARNING][%d] %s'%(id,e.__class__.__name__))
-		except KeyboardInterrupt:pass
-		except:
-			exception=format_exc()
-			exception_event.set()
+		except KeyboardInterrupt:exit(0)
+		except:exit(1)
 
 if __name__=='__main__':
 	try:
 		parser=ArgumentParser()
 		parser.add_argument('-t','--threads',type=int,help='set number of the threads',default=15)
 		parser.add_argument('-p','--proxies',help='set the path to the list with the proxies')
-		parser.add_argument('-d','--debug',help='show all logs',action='store_true')
+		parser.add_argument('-v','--verbose',help='enable verbose mode',action='store_true')
+		parser.add_argument('-d','--debug',help='enable debug mode',action='store_true')
 		args=parser.parse_args()
+		args.verbose=args.debug or args.verbose
 		lock=Lock()
-		exception_event=Event()
 		proxies=[]
 		for i in range(args.threads):
 			t=Thread(target=bot,args=(i+1,))
 			t.daemon=True
 			t.start()
-		exception_event.wait()
-		logv('[ERROR] %s'%exception)
+		for t in list_threads()[1:]:
+			t.join()
+	except SystemExit as e:exit(int(str(e)))
 	except KeyboardInterrupt:exit(0)
-	except Exception as e:
-		logv('[ERROR] %s'%e)
+	except:exit(1)
