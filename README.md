@@ -93,7 +93,7 @@ git clone "https://github.com/DeBos99/pajacyk.git"
 
 ## Documentation
 
-### Arguments
+### Optional arguments
 
 | Argument                  | Description                                             | Default value               |
 | :------------------------ | :------------------------------------------------------ | :-------------------------- |
